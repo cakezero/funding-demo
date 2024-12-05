@@ -1,4 +1,3 @@
-import './App.css'
 import Home from './components/Home'
 import NFT from './components/NFT'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
