@@ -4,10 +4,12 @@ import { useWallets, useFundWallet, usePrivy } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { USDC_TEST } from "../js/constants";
 import abi from "../js/abi.json";
+import { Spinner } from "../js/icons";
 
 const ImageEditor = () => {
   const [pfpImage, setPfpImage] = useState(null);
   const [overlayImage, setOverlayImage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [overlayPosition, setOverlayPosition] = useState({ x: 0, y: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [balance, setBalance] = useState(0);
@@ -17,7 +19,7 @@ const ImageEditor = () => {
   const canvasHeight = 800; // Fixed canvas size (800x800)
   const { wallets } = useWallets();
   const { fundWallet } = useFundWallet();
-  const { user } =  usePrivy();
+  const { user, ready } =  usePrivy();
 
   const initialPosition = { x: canvasWidth / 2 - 50, y: canvasHeight / 3 };
 
@@ -29,15 +31,17 @@ const ImageEditor = () => {
     await fundWallet(user?.wallet.address)
   }
 
-  const switchChain = async () => {
-    const wallet = wallets[0];
-    console.log({wallet})
-    const provider = await wallet.getEthersProvider();
-    const signer = provider.getSigner();
-    return { provider, signer };
-  };
-
+  
   useEffect(() => {
+    const switchChain = async () => {
+      const wallet = wallets[0];
+      console.log({wallets})
+      console.log({wallet, ready, user})
+      const provider = await wallet.getEthersProvider();
+      const signer = provider.getSigner();
+      return { provider, signer };
+    };
+
     const getBalance = async () => {
       const walletProp = await switchChain();
       const contract = new ethers.Contract(USDC_TEST, abi, walletProp.provider);
@@ -48,9 +52,17 @@ const ImageEditor = () => {
       setBalance(finBal);
     };
     getBalance();
-  }, []);
+  }, [ready, wallets]);
 
   const payFee = async () => {
+    setLoading(true)
+    const switchChain = async () => {
+      const wallet = wallets[0];
+      await wallet.switchChain(84532);
+      const provider = await wallet.getEthersProvider();
+      const signer = provider.getSigner();
+      return { provider, signer };
+    };
     const amountInUSDC = "1";
     const recieverAddy = "0xDd069aba883c2bCBA2Ff2697a15130ad16e7C6A1";
 
@@ -75,17 +87,18 @@ const ImageEditor = () => {
       // console.log('hit1')
 
       const tx = await walletProp.signer.sendTransaction({
-        method: "eth_sendTransaction",
+        // method: "eth_sendTransaction",
         params: [txData]
 
       })
       const receipt = await tx.wait(1);
 
       console.log({ receipt });
+      setLoading(false)
 
       downloadImage();
     } catch (error) {
-      console.log({error})
+      console.error({error})
     }
   };
 
@@ -217,10 +230,10 @@ const ImageEditor = () => {
       {/* Download Button */}
       {balance >= 1 && pfpImage && overlayImage ? (
         <button
-          className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4"
+          className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4 flex"
           onClick={payFee}
         >
-          Pay 1 USDC to download
+        {loading ? (<> <Spinner /> <span className="ml-2">Paying...</span></>) : <>Pay 1 USDC to download</>}
         </button>
       ) : ((balance < 1 && pfpImage && overlayImage) ? (<><button
         className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4"
@@ -228,7 +241,7 @@ const ImageEditor = () => {
       >
         Insufficient USDC balance, click to fund
       </button></>) : (<><button
-          className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4"
+          className="bg-red-200 text-white py-2 px-6 rounded-lg mt-4"
         >
           Download Image
         </button></>) )}

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { PrivyProvider } from '@privy-io/react-auth'
+import vite from '../public/vite.svg'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -15,7 +16,7 @@ createRoot(document.getElementById('root')).render(
         appearance: {
           theme: 'light',
           accentColor: '#676FFF',
-          logo: 'https://your-logo-url',
+          logo: '/vite.svg'
         },
         // Create embedded wallets for all users
         embeddedWallets: {

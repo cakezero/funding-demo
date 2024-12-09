@@ -8,7 +8,7 @@ import { USDC_TEST } from "../js/constants";
 const Balance = ({ close }) => {
   const [balance, setBalance] = useState(0);
 
-  const { user } = usePrivy();
+  const { user, ready } = usePrivy();
   const { fundWallet } = useFundWallet();
   const { wallets } = useWallets();
 
@@ -16,15 +16,16 @@ const Balance = ({ close }) => {
     await fundWallet(user?.wallet.address);
   };
 
-  const switchChain = async () => {
-    const wallet = wallets[0];
-    await wallet.switchChain(84532);
-    const provider = await wallet.getEthersProvider();
-    const signer = provider.getSigner();
-    return { provider, signer };
-  };
-
+  
   useEffect(() => {
+    const switchChain = async () => {
+      const wallet = wallets[0];
+      await wallet.switchChain(84532);
+      const provider = await wallet.getEthersProvider();
+      const signer = provider.getSigner();
+      return { provider, signer };
+    };
+
     const getBalance = async () => {
       const walletProp = await switchChain();
       const contract = new ethers.Contract(USDC_TEST, abi, walletProp.provider);
@@ -36,7 +37,7 @@ const Balance = ({ close }) => {
       setBalance(finBal);
     };
     getBalance();
-  }, []);
+  }, [ready, wallets]);
 
   // Function to handle Send button click
   const handleSend = () => {
