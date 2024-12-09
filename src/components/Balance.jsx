@@ -50,7 +50,7 @@ const Balance = ({ close }) => {
         <button onClick={close} className="place-self-end">
           ✖
         </button>
-        <div className="bg-black p-6 rounded-lg shadow-lg w-96 h-96">
+        <div className="bg-black p-6 rounded-2xl shadow-lg w-96 h-96">
           <h1 className="text-3xl text-center font-semibold mt-2 mb-9">
             $ {balance} USDC
           </h1>
