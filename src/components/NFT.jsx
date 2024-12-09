@@ -1,17 +1,49 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from "react";
+import Balance from "./Balance";
+import { ArrDown } from "../js/icons";
+import { useWallets } from "@privy-io/react-auth";
+import { ethers } from "ethers";
 
 const ImageEditor = () => {
   const [catImage, setCatImage] = useState(null);
   const [overlayImage, setOverlayImage] = useState(null);
   const [overlayPosition, setOverlayPosition] = useState({ x: 0, y: 0 });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [balance, setBalance] = useState(0);
   const [overlayScale, setOverlayScale] = useState(0.2); // Scale factor for the overlay image
-  const [showMoveButton, setShowMoveButton] = useState(false); // State to show Move button after overlay is selected
   const canvasRef = useRef(null);
   const canvasWidth = 800;
   const canvasHeight = 600;
+  const { wallets } = useWallets();
 
-  // Set initial position of overlay image (beanie or mug)
+  // Set initial position of overlay image (mug or beanie)
   const initialPosition = { x: canvasWidth / 2 - 50, y: canvasHeight / 3 };
+
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const switchChain = async () => {
+    const wallet = wallets[0];
+    await wallet.switchChain(84532);
+    const provider = await wallet.getEthersProvider();
+    const signer = provider.getSigner();
+    return { provider, signer };
+  };
+
+  useEffect(() => {
+    const getBalance = async () => {
+      const walletProp = await switchChain();
+      const contract = new ethers.Contract(USDC_TEST, abi, walletProp.provider);
+      const bal =
+        (await contract.balanceOf(
+          await walletProp.signer.getAddress()
+        )) / BigInt(10 ** 6);
+      const finBal = bal.toString();
+      setBalance(finBal);
+    };
+    getBalance();
+  }, []);
 
   // Handle image upload (cat photo)
   const handleCatImageChange = (e) => {
@@ -29,13 +61,13 @@ const ImageEditor = () => {
   // Handle overlay image (mug or beanie)
   const handleOverlayChange = (overlayType) => {
     const img = new Image();
-    let imagePath = '';
+    let imagePath = "";
 
     // Choose image based on the overlay type (mug or beanie)
-    if (overlayType === 'mug') {
-      imagePath = '/path/to/mug-image.png'; // Replace with actual mug image path
-    } else if (overlayType === 'beanie') {
-      imagePath = '/images/image.png'; // Replace with actual beanie image path
+    if (overlayType === "mug") {
+      imagePath = "images/image.png"; // Replace with actual mug image path
+    } else if (overlayType === "beanie") {
+      imagePath = "/images/beanie.jpeg"; // Replace with actual beanie image path
     }
 
     img.src = imagePath;
@@ -45,9 +77,6 @@ const ImageEditor = () => {
 
       // Redraw canvas immediately after the overlay image is set
       drawOnCanvas(catImage); // Redraw the cat image with overlay
-
-      // Show move button after overlay image is set
-      setShowMoveButton(true);
     };
   };
 
@@ -55,14 +84,17 @@ const ImageEditor = () => {
   const drawOnCanvas = (catImg) => {
     if (!catImg) return; // If no cat image, do nothing
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     canvas.width = canvasWidth; // Fixed canvas width
     canvas.height = canvasHeight; // Fixed canvas height
 
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
 
     // Scale the cat image to fit within the fixed canvas size
-    const scale = Math.min(canvasWidth / catImg.width, canvasHeight / catImg.height);
+    const scale = Math.min(
+      canvasWidth / catImg.width,
+      canvasHeight / catImg.height
+    );
     const x = (canvasWidth - catImg.width * scale) / 2; // Center horizontally
     const y = (canvasHeight - catImg.height * scale) / 2; // Center vertically
     ctx.drawImage(catImg, x, y, catImg.width * scale, catImg.height * scale); // Draw the scaled cat image
@@ -73,97 +105,37 @@ const ImageEditor = () => {
         overlayPosition.x,
         overlayPosition.y,
         overlayImage.width * overlayScale, // Scale the overlay image
-        overlayImage.height * overlayScale  // Scale the overlay image
+        overlayImage.height * overlayScale // Scale the overlay image
       );
     }
-  };
-
-  // Handle keydown event to move the overlay image for desktop
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!overlayImage) return; // If no overlay image, do nothing
-
-      let newPos = { ...overlayPosition };
-
-      switch (e.key) {
-        case 'ArrowUp':
-          newPos.y -= 10;
-          break;
-        case 'ArrowDown':
-          newPos.y += 10;
-          break;
-        case 'ArrowLeft':
-          newPos.x -= 10;
-          break;
-        case 'ArrowRight':
-          newPos.x += 10;
-          break;
-        default:
-          return; // If key is not an arrow key, do nothing
-      }
-
-      setOverlayPosition(newPos); // Update overlay position
-      drawOnCanvas(catImage); // Redraw canvas with new position
-    };
-
-    // Add event listener for keydown
-    window.addEventListener('keydown', handleKeyDown);
-
-    // Clean up the event listener on component unmount
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [overlayImage, overlayPosition, catImage]);
-
-  // Handle touch events for mobile
-  const handleTouchMove = (e) => {
-    if (!overlayImage) return;
-
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const touchX = e.touches[0].clientX - rect.left;
-    const touchY = e.touches[0].clientY - rect.top;
-
-    setOverlayPosition({ x: touchX - overlayImage.width * overlayScale / 2, y: touchY - overlayImage.height * overlayScale / 2 });
-    drawOnCanvas(catImage); // Redraw canvas with new touch position
   };
 
   // Download the edited image
   const downloadImage = () => {
     const canvas = canvasRef.current;
     const dataUrl = canvas.toDataURL();
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = dataUrl;
-    link.download = 'edited-image.png';
+    link.download = "edited-image.png";
     link.click();
-  };
-
-  // Handle on-screen arrow buttons for mobile devices
-  const moveOverlay = (direction) => {
-    let newPos = { ...overlayPosition };
-    switch (direction) {
-      case 'up':
-        newPos.y -= 10;
-        break;
-      case 'down':
-        newPos.y += 10;
-        break;
-      case 'left':
-        newPos.x -= 10;
-        break;
-      case 'right':
-        newPos.x += 10;
-        break;
-      default:
-        return;
-    }
-    setOverlayPosition(newPos);
-    drawOnCanvas(catImage);
   };
 
   return (
     <div className="flex flex-col items-center p-6">
-      <h3 className="text-2xl font-semibold mb-4">Upload and Edit Image</h3>
+      <div className="flex place-self-end">
+        <button
+          onClick={openModal}
+          className="bg-blue-500 flex justify-center mr-1 items-center text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition text-xl font-bold"
+        >
+          Balance: {balance} USDC
+        </button>
+        
+      </div>
+      <h3 className="text-2xl font-semibold mt-10 mb-4">
+        Upload and Edit Image
+      </h3>
+
+      {isModalOpen && <Balance close={() => setIsModalOpen(false)} />}
 
       {/* Image Upload */}
       <input
@@ -176,37 +148,22 @@ const ImageEditor = () => {
       {/* Overlay buttons to add mug or beanie */}
       {catImage && (
         <div className="mb-4 flex flex-row gap-4">
-          <button
-            className="cursor-pointer w-32 h-32"
+          {/* <button
+            className="cursor-pointer w-32 h-32 border-4 border-gray-500 rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             onClick={() => handleOverlayChange('mug')}
           >
             <img
-              src="/path/to/mug-image.png" // Placeholder for mug image
+              src="images/image.png" // Placeholder for mug image
               alt="Add Mug"
-              className="w-full h-full object-cover"
+              className="cursor-pointer w-16 h-16 border-4 border-gray-500 rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             />
-          </button>
-          <button
-            className="cursor-pointer w-32 h-32"
-            onClick={() => handleOverlayChange('beanie')}
-          >
+          </button> */}
+          <button onClick={() => handleOverlayChange("beanie")}>
             <img
-              src="/images/image.png" // Placeholder for beanie image
+              src="/images/beanie.jpeg" // Placeholder for beanie image
               alt="Add Beanie"
-              className="w-full h-full object-cover"
+              className="cursor-pointer w-16 h-16 border-4 border-gray-500 rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             />
-          </button>
-        </div>
-      )}
-
-      {/* Move Button (only for desktop users, not visible on mobile) */}
-      {showMoveButton && (
-        <div className="mb-4">
-          <button
-            className="bg-yellow-500 text-white py-2 px-6 rounded-lg mb-4"
-            onClick={() => console.log("Use arrow keys to move")}
-          >
-            Use Arrow Keys to Move
           </button>
         </div>
       )}
@@ -214,9 +171,7 @@ const ImageEditor = () => {
       {/* Canvas to display image and overlay */}
       <canvas
         ref={canvasRef}
-        onTouchMove={handleTouchMove} // Mobile touch event
-        onTouchEnd={e => e.preventDefault()} // Prevent default touch behavior
-        style={{ border: '1px solid #000', cursor: 'pointer' }}
+        style={{ border: "1px solid #000", cursor: "pointer" }}
       />
 
       {/* Download Button */}
