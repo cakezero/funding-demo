@@ -62,7 +62,7 @@ const Balance = ({ close }) => {
               onClick={handleSend}
               className="bg-green-500 flex justify-center items-center text-white py-2 px-6 rounded-lg hover:bg-green-600 transition"
             >
-              <SendButton /> <span className="ml-2">Send</span>
+              <SendButton /> <span className="ml-1">Send</span>
             </button>
 
             {/* Receive Button */}
@@ -70,7 +70,7 @@ const Balance = ({ close }) => {
               onClick={fund}
               className="bg-blue-500 flex text-white py-2 px-6 rounded-lg hover:bg-blue-600 transition"
             >
-              <DownloadButton /> <span className="ml-2">Receive</span>
+              <DownloadButton /> <span className="ml-1">Receive</span>
             </button>
           </div>
         </div>

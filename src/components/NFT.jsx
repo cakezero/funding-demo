@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import Balance from "./Balance";
-import { useWallets, useSendTransaction, useFundWallet, usePrivy } from "@privy-io/react-auth";
+import {
+  useWallets,
+  useSendTransaction,
+  useFundWallet,
+  usePrivy,
+} from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { USDC_TEST } from "../js/constants";
 import abi from "../js/abi.json";
@@ -15,29 +20,26 @@ const ImageEditor = () => {
   const [balance, setBalance] = useState(0);
   const [overlayScale, setOverlayScale] = useState(0.2); // Scale factor for the overlay image
   const canvasRef = useRef(null);
-  const canvasWidth = 800;
-  const canvasHeight = 800; // Fixed canvas size (800x800)
+  const canvasWidth = 400;
+  const canvasHeight = 400; // Fixed canvas size (800x800)
   const { wallets } = useWallets();
   const { fundWallet } = useFundWallet();
-  const { user, ready } =  usePrivy();
+  const { user, ready } = usePrivy();
   const { sendTransaction } = useSendTransaction();
-
-  const initialPosition = { x: canvasWidth / 2 - 50, y: canvasHeight / 3 };
 
   const openModal = () => {
     setIsModalOpen(true);
   };
 
   const fund = async () => {
-    await fundWallet(user?.wallet.address)
-  }
+    await fundWallet(user?.wallet.address);
+  };
 
-  
   useEffect(() => {
     const switchChain = async () => {
       const wallet = wallets[0];
-      console.log({wallets})
-      console.log({wallet, ready, user})
+      console.log({ wallets });
+      console.log({ wallet, ready, user });
       const provider = await wallet.getEthersProvider();
       const signer = provider.getSigner();
       return { provider, signer };
@@ -56,7 +58,7 @@ const ImageEditor = () => {
   }, [ready, wallets]);
 
   const payFee = async () => {
-    setLoading(true)
+    setLoading(true);
     const switchChain = async () => {
       const wallet = wallets[0];
       await wallet.switchChain(84532);
@@ -77,26 +79,29 @@ const ImageEditor = () => {
         abi,
         walletProp.provider
       );
-      const transferData = usdcContract.interface.encodeFunctionData('transfer', [recieverAddy, amountInDecimal])
+      const transferData = usdcContract.interface.encodeFunctionData(
+        "transfer",
+        [recieverAddy, amountInDecimal]
+      );
 
       const txData = {
         to: USDC_TEST,
         value: 0,
-        data: transferData
-      }
+        data: transferData,
+      };
 
-      const tx = await sendTransaction(txData)
+      const tx = await sendTransaction(txData);
 
       // const tx = await walletProp.signer.sendTransaction(txData)
       // const receipt = await tx.wait(1);
 
       console.log({ tx: tx.transactionHash });
-      setLoading(false)
+      setLoading(false);
 
       downloadImage();
     } catch (error) {
-      console.error({error})
-      setLoading(false)
+      console.error({ error });
+      setLoading(false);
     }
   };
 
@@ -128,11 +133,22 @@ const ImageEditor = () => {
     img.src = imagePath;
     img.onload = () => {
       setOverlayImage(img); // Set overlay image to the selected one
-      // Set the overlay to be at the center of the canvas
+
+      // Calculate scale factor for overlay image
+      const scaleFactor = Math.min(
+        canvasWidth / img.width,
+        canvasHeight / img.height
+      );
+
+      // Set the overlay to be centered on the canvas
       setOverlayPosition({
-        x: (canvasWidth - img.width * overlayScale) / 2,
-        y: (canvasHeight - img.height * overlayScale) / 1,
+        x: (canvasWidth - img.width * scaleFactor) / 2,
+        y: (canvasHeight - img.height * scaleFactor) / 2,
       });
+
+      // Set the overlay scale dynamically based on the canvas size
+      setOverlayScale(scaleFactor);
+
       drawOnCanvas(pfpImage); // Redraw the pfp image with overlay
     };
   };
@@ -142,12 +158,12 @@ const ImageEditor = () => {
     if (!pfpImg) return; // If no pfp image, do nothing
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    canvas.width = canvasWidth; // Fixed canvas width (800x800)
-    canvas.height = canvasHeight; // Fixed canvas height (800x800)
+    canvas.width = canvasWidth; // Fixed canvas width (400x400)
+    canvas.height = canvasHeight; // Fixed canvas height (400x400)
 
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
 
-    // Scale the pfp image to fit within the 800x800 canvas size
+    // Scale the pfp image to fit within the 400x400 canvas size
     const scale = Math.min(
       canvasWidth / pfpImg.width,
       canvasHeight / pfpImg.height
@@ -196,8 +212,6 @@ const ImageEditor = () => {
         Upload and Edit Image
       </h3>
 
-      {isModalOpen && <Balance close={() => setIsModalOpen(false)} />}
-
       {/* Image Upload */}
       <input
         type="file"
@@ -209,11 +223,14 @@ const ImageEditor = () => {
       {/* Overlay buttons to add mug or beanie */}
       {pfpImage && (
         <div className="mb-4 flex flex-row gap-4">
-          <button onClick={() => handleOverlayChange("beanie")}>
+          <button
+            onClick={() => handleOverlayChange("beanie")}
+            className="border-4 border-gray-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+          >
             <img
               src="/images/cup png.png" // Placeholder for beanie image
               alt="cup"
-              className="cursor-pointer w-20 h-20 border-4 border-gray-500 rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              className="cursor-pointer w-20 h-20 transform hover:scale-110"
             />
           </button>
         </div>
@@ -231,18 +248,32 @@ const ImageEditor = () => {
           className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4 flex"
           onClick={payFee}
         >
-        {loading ? (<> <Spinner /> <span className="ml-2">Paying...</span></>) : <>Pay 1 USDC to download</>}
+          {loading ? (
+            <>
+              {" "}
+              <Spinner /> <span className="ml-2">Paying...</span>
+            </>
+          ) : (
+            <>Pay 1 USDC to download</>
+          )}
         </button>
-      ) : ((balance < 1 && pfpImage && overlayImage) ? (<><button
-        className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4"
-        onClick={fund}
-      >
-        Insufficient USDC balance, click to fund
-      </button></>) : (<><button
-          className="bg-red-200 text-white py-2 px-6 rounded-lg mt-4"
-        >
-          Download Image
-        </button></>) )}
+      ) : balance < 1 && pfpImage && overlayImage ? (
+        <>
+          <button
+            className="bg-red-500 text-white py-2 px-6 rounded-lg mt-4"
+            onClick={fund}
+          >
+            Insufficient USDC balance, click to fund
+          </button>
+        </>
+      ) : (
+        <>
+          <button className="bg-red-200 text-white py-2 px-6 rounded-lg mt-4">
+            Download Image
+          </button>
+        </>
+      )}
+      {isModalOpen && <Balance close={() => setIsModalOpen(false)} />}
     </div>
   );
 };
