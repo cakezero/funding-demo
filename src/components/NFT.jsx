@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Balance from "./Balance";
-import { useWallets, useFundWallet, usePrivy } from "@privy-io/react-auth";
+import { useWallets, useSendTransaction, useFundWallet, usePrivy } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { USDC_TEST } from "../js/constants";
 import abi from "../js/abi.json";
@@ -20,6 +20,7 @@ const ImageEditor = () => {
   const { wallets } = useWallets();
   const { fundWallet } = useFundWallet();
   const { user, ready } =  usePrivy();
+  const { sendTransaction } = useSendTransaction();
 
   const initialPosition = { x: canvasWidth / 2 - 50, y: canvasHeight / 3 };
 
@@ -64,10 +65,10 @@ const ImageEditor = () => {
       return { provider, signer };
     };
     const amountInUSDC = "1";
-    const recieverAddy = "0xDd069aba883c2bCBA2Ff2697a15130ad16e7C6A1";
+    const recieverAddy = "0x141c7330bDa4885fb9e61f3745225Db62CDB00C4";
 
     const amountInDecimal = ethers.parseUnits(amountInUSDC, 6);
-    console.log({amountInDecimal})
+    // console.log({amountInDecimal})
     try {
       const walletProp = await switchChain();
 
@@ -79,26 +80,23 @@ const ImageEditor = () => {
       const transferData = usdcContract.interface.encodeFunctionData('transfer', [recieverAddy, amountInDecimal])
 
       const txData = {
-        to: recieverAddy,
+        to: USDC_TEST,
         value: 0,
         data: transferData
       }
-      // const tx = await usdcContract.transfer(recieverAddy, amountInDecimal);
-      // console.log('hit1')
 
-      const tx = await walletProp.signer.sendTransaction({
-        // method: "eth_sendTransaction",
-        params: [txData]
+      const tx = await sendTransaction(txData)
 
-      })
-      const receipt = await tx.wait(1);
+      // const tx = await walletProp.signer.sendTransaction(txData)
+      // const receipt = await tx.wait(1);
 
-      console.log({ receipt });
+      console.log({ tx: tx.transactionHash });
       setLoading(false)
 
       downloadImage();
     } catch (error) {
       console.error({error})
+      setLoading(false)
     }
   };
 
