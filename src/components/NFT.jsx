@@ -223,14 +223,11 @@ const ImageEditor = () => {
       {/* Overlay buttons to add mug or beanie */}
       {pfpImage && (
         <div className="mb-4 flex flex-row gap-4">
-          <button
-            onClick={() => handleOverlayChange("beanie")}
-            className="border-4 border-gray-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
-          >
+          <button onClick={() => handleOverlayChange("beanie")}>
             <img
               src="/images/cup png.png" // Placeholder for beanie image
               alt="cup"
-              className="cursor-pointer w-20 h-20 transform hover:scale-110"
+              className="cursor-pointer w-28 h-28 border-4 border-gray-500 rounded-2xl p-1 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             />
           </button>
         </div>
